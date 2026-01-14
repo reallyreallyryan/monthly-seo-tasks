@@ -16,6 +16,7 @@ let appState = {
     clients: [],
     tasks: [],
     completions: {},
+    minimizedClients: [],
     isLoading: true,
     error: null
 };
@@ -138,6 +139,7 @@ async function fetchData() {
         appState.clients = data.clients || [];
         appState.tasks = data.tasks || [];
         appState.completions = data.completions || {};
+        appState.minimizedClients = data.minimizedClients || [];
 
         // Clean up any orphaned completion data
         cleanupCompletions();
@@ -156,7 +158,8 @@ async function saveData() {
             currentMonth: appState.currentMonth,
             clients: appState.clients,
             tasks: appState.tasks,
-            completions: appState.completions
+            completions: appState.completions,
+            minimizedClients: appState.minimizedClients
         };
 
         const response = await fetch(`${CONFIG.API_BASE}/${CONFIG.BIN_ID}`, {
@@ -218,7 +221,7 @@ function render() {
 
     app.innerHTML = `
         ${renderHeader()}
-        ${renderTable()}
+        ${renderClientGrid()}
         ${renderControls()}
     `;
 }
@@ -253,7 +256,7 @@ function renderHeader() {
     `;
 }
 
-function renderTable() {
+function renderClientGrid() {
     if (appState.clients.length === 0 && appState.tasks.length === 0) {
         return `
             <div class="empty-state">
@@ -278,52 +281,52 @@ function renderTable() {
         `;
     }
 
-    const taskHeaders = appState.tasks.map(task => `
-        <th class="task-header">
-            ${escapeHtml(task)}
-            <button class="btn btn-danger delete-btn" data-action="delete-task" data-task="${escapeHtml(task)}" title="Delete task">&times;</button>
-        </th>
-    `).join('');
+    const clientCards = appState.clients.map(client => {
+        const isMinimized = appState.minimizedClients.includes(client);
+        const completedCount = appState.tasks.filter(task =>
+            appState.completions[client]?.[task]
+        ).length;
+        const totalTasks = appState.tasks.length;
 
-    const clientRows = appState.clients.map(client => {
-        const checkboxes = appState.tasks.map(task => {
+        const taskList = appState.tasks.map(task => {
             const isChecked = appState.completions[client]?.[task] || false;
             return `
-                <td class="checkbox-cell">
+                <label class="task-item">
                     <input type="checkbox"
                            data-client="${escapeHtml(client)}"
                            data-task="${escapeHtml(task)}"
                            ${isChecked ? 'checked' : ''}>
-                </td>
+                    <span>${escapeHtml(task)}</span>
+                </label>
             `;
         }).join('');
 
         return `
-            <tr>
-                <td>
-                    <div class="client-cell">
-                        <span>${escapeHtml(client)}</span>
-                        <button class="btn btn-danger delete-btn" data-action="delete-client" data-client="${escapeHtml(client)}" title="Delete client">&times;</button>
+            <div class="client-card ${isMinimized ? 'minimized' : ''}">
+                <div class="client-card-header">
+                    <div class="client-card-title">
+                        <button class="btn-toggle" data-action="toggle-minimize" data-client="${escapeHtml(client)}" title="${isMinimized ? 'Expand' : 'Minimize'}">
+                            ${isMinimized ? '+' : '−'}
+                        </button>
+                        <span class="client-name">${escapeHtml(client)}</span>
+                        <span class="progress-badge">${completedCount}/${totalTasks}</span>
                     </div>
-                </td>
-                ${checkboxes}
-            </tr>
+                    <button class="btn btn-danger delete-btn" data-action="delete-client" data-client="${escapeHtml(client)}" title="Delete client">&times;</button>
+                </div>
+                ${!isMinimized ? `
+                    <div class="client-card-body">
+                        <div class="task-list">
+                            ${taskList}
+                        </div>
+                    </div>
+                ` : ''}
+            </div>
         `;
     }).join('');
 
     return `
-        <div class="table-wrapper">
-            <table class="tracker-table">
-                <thead>
-                    <tr>
-                        <th>Client</th>
-                        ${taskHeaders}
-                    </tr>
-                </thead>
-                <tbody>
-                    ${clientRows}
-                </tbody>
-            </table>
+        <div class="client-grid">
+            ${clientCards}
         </div>
     `;
 }
@@ -426,6 +429,17 @@ function toggleCompletion(client, task) {
     debouncedSave();
 }
 
+function toggleMinimize(client) {
+    const index = appState.minimizedClients.indexOf(client);
+    if (index === -1) {
+        appState.minimizedClients.push(client);
+    } else {
+        appState.minimizedClients.splice(index, 1);
+    }
+    render();
+    debouncedSave();
+}
+
 function resetMonth() {
     if (!confirm('Start a new month? This will clear all checkboxes but keep your clients and tasks.')) {
         return;
@@ -438,6 +452,9 @@ function resetMonth() {
             appState.completions[client][task] = false;
         });
     });
+
+    // Expand all minimized clients
+    appState.minimizedClients = [];
 
     // Update to current month
     appState.currentMonth = getCurrentMonthString();
@@ -467,6 +484,9 @@ function handleClick(event) {
             break;
         case 'delete-task':
             removeTask(target.dataset.task);
+            break;
+        case 'toggle-minimize':
+            toggleMinimize(target.dataset.client);
             break;
     }
 }

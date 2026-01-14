@@ -79,79 +79,143 @@ body {
 }
 
 /* ============================================
-   TABLE - DESKTOP
+   CLIENT GRID
    ============================================ */
-.table-wrapper {
-    overflow-x: auto;
+.client-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: var(--spacing-lg);
     margin-bottom: var(--spacing-lg);
 }
 
-.tracker-table {
-    width: 100%;
-    border-collapse: collapse;
-    min-width: 500px;
+/* ============================================
+   CLIENT CARD
+   ============================================ */
+.client-card {
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    overflow: hidden;
 }
 
-.tracker-table th,
-.tracker-table td {
-    padding: var(--spacing-sm) var(--spacing-md);
-    text-align: left;
-    border-bottom: 1px solid var(--color-border);
-}
-
-.tracker-table th {
+.client-card.minimized {
     background: var(--color-bg-alt);
-    font-weight: 600;
-    font-size: 0.875rem;
-    white-space: nowrap;
 }
 
-.tracker-table th.task-header {
-    position: relative;
-    padding-right: var(--spacing-xl);
-}
-
-.tracker-table th .delete-btn {
-    position: absolute;
-    right: var(--spacing-xs);
-    top: 50%;
-    transform: translateY(-50%);
-    opacity: 0;
-    transition: opacity 0.2s;
-}
-
-.tracker-table th:hover .delete-btn {
-    opacity: 1;
-}
-
-.tracker-table td.checkbox-cell {
-    text-align: center;
-    width: 80px;
-}
-
-.tracker-table input[type="checkbox"] {
-    width: 20px;
-    height: 20px;
-    cursor: pointer;
-    accent-color: var(--color-primary);
-}
-
-.client-cell {
+.client-card-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: var(--spacing-sm);
-    font-weight: 500;
+    padding: var(--spacing-md);
+    background: var(--color-bg-alt);
+    border-bottom: 1px solid var(--color-border);
 }
 
-.client-cell .delete-btn {
+.client-card.minimized .client-card-header {
+    border-bottom: none;
+}
+
+.client-card-title {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    font-weight: 600;
+    min-width: 0;
+}
+
+.client-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.btn-toggle {
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    background: var(--color-bg);
+    cursor: pointer;
+    font-size: 1rem;
+    line-height: 1;
+    color: var(--color-text-muted);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-toggle:hover {
+    background: var(--color-border);
+    color: var(--color-text);
+}
+
+.progress-badge {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--color-text-muted);
+    background: var(--color-bg);
+    padding: 2px 8px;
+    border-radius: 10px;
+    border: 1px solid var(--color-border);
+    flex-shrink: 0;
+}
+
+.client-card-header .delete-btn {
     opacity: 0;
     transition: opacity 0.2s;
     flex-shrink: 0;
 }
 
-.tracker-table tr:hover .client-cell .delete-btn {
+.client-card:hover .client-card-header .delete-btn {
     opacity: 1;
+}
+
+.client-card-body {
+    padding: var(--spacing-md);
+}
+
+/* ============================================
+   TASK LIST
+   ============================================ */
+.task-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
+.task-item {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-sm);
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.task-item:hover {
+    background: var(--color-bg-alt);
+}
+
+.task-item input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    accent-color: var(--color-primary);
+    flex-shrink: 0;
+}
+
+.task-item span {
+    font-size: 0.875rem;
+    color: var(--color-text);
+}
+
+.task-item:has(input:checked) span {
+    color: var(--color-text-muted);
+    text-decoration: line-through;
 }
 
 /* ============================================
@@ -344,10 +408,9 @@ body {
    RESPONSIVE - TABLET
    ============================================ */
 @media (max-width: 768px) {
-    .tracker-table th,
-    .tracker-table td {
-        padding: var(--spacing-xs) var(--spacing-sm);
-        font-size: 0.875rem;
+    .client-grid {
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        gap: var(--spacing-md);
     }
 
     .controls {
@@ -387,9 +450,12 @@ body {
         justify-content: space-between;
     }
 
+    .client-grid {
+        grid-template-columns: 1fr;
+    }
+
     /* Show delete buttons always on mobile */
-    .tracker-table th .delete-btn,
-    .client-cell .delete-btn {
+    .client-card-header .delete-btn {
         opacity: 1;
     }
 }
