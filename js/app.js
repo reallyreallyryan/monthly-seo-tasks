@@ -3,8 +3,9 @@
 // ============================================
 const CONFIG = {
     BIN_ID: '6966f7d3d0ea881f406a513b',
-    API_KEY: '$2a$10$HgzE6St8tyhSYtjBxq7Qk.l2bqTrcaN/RncxKvvpZyZsJYgW04kR6', 
-    API_BASE: 'https://api.jsonbin.io/v3/b'
+    API_KEY: '$2a$10$HgzE6St8tyhSYtjBxq7Qk.l2bqTrcaN/RncxKvvpZyZsJYgW04kR6',
+    API_BASE: 'https://api.jsonbin.io/v3/b',
+    APP_PASSWORD: 'seo-tasks'
 };
 
 // ============================================
@@ -48,6 +49,61 @@ function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+}
+
+// ============================================
+// SECTION 3.5: PASSWORD GATE
+// ============================================
+function isAuthenticated() {
+    return localStorage.getItem('seo-tracker-auth') === 'true';
+}
+
+function authenticate(password) {
+    if (password === CONFIG.APP_PASSWORD) {
+        localStorage.setItem('seo-tracker-auth', 'true');
+        return true;
+    }
+    return false;
+}
+
+function renderPasswordPrompt(errorMsg = '') {
+    return `
+        <div class="password-gate">
+            <h1>SEO Monthly Tracker</h1>
+            <p>Enter password to continue</p>
+            <form data-form="password">
+                <input type="password" name="password" placeholder="Password" required autofocus>
+                <button type="submit" class="btn btn-primary">Enter</button>
+            </form>
+            ${errorMsg ? `<p class="error-msg">${escapeHtml(errorMsg)}</p>` : ''}
+        </div>
+    `;
+}
+
+function handlePasswordSubmit(event) {
+    event.preventDefault();
+    const form = event.target;
+    const passwordInput = form.querySelector('input[name="password"]');
+    const password = passwordInput.value;
+
+    if (authenticate(password)) {
+        initApp();
+    } else {
+        const app = document.getElementById('app');
+        app.innerHTML = renderPasswordPrompt('Incorrect password');
+    }
+}
+
+async function initApp() {
+    const app = document.getElementById('app');
+
+    // Set up event delegation
+    app.addEventListener('click', handleClick);
+    app.addEventListener('change', handleChange);
+    app.addEventListener('submit', handleSubmit);
+
+    // Load data from JSONbin
+    await fetchData();
 }
 
 // ============================================
@@ -449,12 +505,18 @@ function handleSubmit(event) {
 // SECTION 8: INITIALIZATION
 // ============================================
 document.addEventListener('DOMContentLoaded', async () => {
-    // Set up event delegation
     const app = document.getElementById('app');
-    app.addEventListener('click', handleClick);
-    app.addEventListener('change', handleChange);
-    app.addEventListener('submit', handleSubmit);
 
-    // Load data from JSONbin
-    await fetchData();
+    if (isAuthenticated()) {
+        // Already logged in, load the app
+        await initApp();
+    } else {
+        // Show password prompt
+        app.innerHTML = renderPasswordPrompt();
+        app.addEventListener('submit', (e) => {
+            if (e.target.dataset.form === 'password') {
+                handlePasswordSubmit(e);
+            }
+        });
+    }
 });
